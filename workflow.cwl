@@ -38,7 +38,7 @@ steps:
         source: "#submitterUploadSynId"
       # TODO: replace `valueFrom` with the admin user ID or admin team ID
       - id: principalid
-        valueFrom: "3379097"
+        valueFrom: "3449996"
       - id: permissions
         valueFrom: "download"
       - id: synapse_config
@@ -52,7 +52,7 @@ steps:
         source: "#adminUploadSynId"
       # TODO: replace `valueFrom` with the admin user ID or admin team ID
       - id: principalid
-        valueFrom: "3379097"
+        valueFrom: "3449996"
       - id: permissions
         valueFrom: "download"
       - id: synapse_config
@@ -88,7 +88,7 @@ steps:
     in:
       # TODO: replace `valueFrom` with the Synapse ID to the challenge goldstandard
       - id: synapseid
-        valueFrom: "syn18081597"
+        valueFrom: "syn31535852"
       - id: synapse_config
         source: "#synapseConfig"
     out:
@@ -119,7 +119,7 @@ steps:
         source: "#validate_docker/invalid_reasons"
       # OPTIONAL: set `default` to `false` if email notification about valid submission is needed
       - id: errors_only
-        default: true
+        default: false
     out: [finished]
 
   annotate_docker_validation_with_output:
@@ -172,7 +172,7 @@ steps:
         default: true
       # TODO: replace `valueFrom` with the absolute path to the data directory to be mounted
       - id: input_dir
-        valueFrom: "/tmp"
+        valueFrom: "/home/ssm-user/TB_CHALLENGE_VALIDATION_DATA"
       - id: docker_script
         default:
           class: File
@@ -220,6 +220,8 @@ steps:
     in:
       - id: input_file
         source: "#run_docker/predictions"
+      - id: goldstandard
+        source: "#download_goldstandard/filepath"
       - id: entity_type
         source: "#get_docker_submission/entity_type"
     out:
@@ -240,7 +242,7 @@ steps:
         source: "#validate/invalid_reasons"
       # OPTIONAL: set `default` to `false` if email notification about valid submission is needed
       - id: errors_only
-        default: true
+        default: false
     out: [finished]
 
   annotate_validation_with_output:

@@ -36,20 +36,27 @@ requirements:
           #!/usr/bin/env python
           import argparse
           import json
+          from sklearn import metrics
+
           parser = argparse.ArgumentParser()
           parser.add_argument("-f", "--submissionfile", required=True, help="Submission File")
           parser.add_argument("-r", "--results", required=True, help="Scoring results")
           parser.add_argument("-g", "--goldstandard", required=True, help="Goldstandard for scoring")
 
           args = parser.parse_args()
-          score = 3
+          result = {}
+
           prediction_file_status = "SCORED"
-          # secondary_metric and secondary_metric_value are optional
-          result = {'primary_metric': 'auc',
-                    'primary_metric_value': 0.8,
-                    'secondary_metric': 'aupr',
-                    'secondary_metric_value': 0.2,
-                    'submission_status': prediction_file_status}
+          subdf = pd.read_csv(args.submissionfile)
+          golddf = pd.read_csv(args.goldstandard)
+
+          mergeddf = subdf.merge(golddf, on = ['filename'], how='left')
+          #setosa : target class in data
+          fpr, tpr, thresholds = metrics.roc_curve(mergeddf['label'], mergeddf['class_0_pp'], 
+                                                    pos_label='setosa')
+          auc_score = metrics.auc(fpr, tpr)
+          result['score'] = auc_score
+
           with open(args.results, 'w') as o:
             o.write(json.dumps(result))
      
@@ -58,34 +65,6 @@ outputs:
     type: File
     outputBinding:
       glob: results.json
-
-  - id: primary_metric
-    type: string
-    outputBinding:
-      glob: results.json
-      loadContents: true
-      outputEval: $(JSON.parse(self[0].contents)['primary_metric'])
-
-  - id: primary_metric_value
-    type: double
-    outputBinding:
-      glob: results.json
-      loadContents: true
-      outputEval: $(JSON.parse(self[0].contents)['primary_metric_value'])
-
-  - id: secondary_metric
-    type: string?
-    outputBinding:
-      glob: results.json
-      loadContents: true
-      outputEval: $(JSON.parse(self[0].contents)['secondary_metric'])
-
-  - id: secondary_metric_value
-    type: double?
-    outputBinding:
-      glob: results.json
-      loadContents: true
-      outputEval: $(JSON.parse(self[0].contents)['secondary_metric_value'])
 
   - id: status
     type: string
