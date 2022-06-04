@@ -8,7 +8,7 @@ baseCommand: python
 
 hints:
   DockerRequirement:
-    dockerPull: docker.synapse.org/syn16924920/scoring_harness
+    dockerPull: python:3.8.8-slim-buster
 
 inputs:
   - id: input_file
