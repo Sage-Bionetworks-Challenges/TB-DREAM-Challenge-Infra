@@ -47,10 +47,7 @@ requirements:
           result = {}
 
           prediction_file_status = "SCORED"
-          subdf = pd.read_csv(args.submissionfile)
-          golddf = pd.read_csv(args.goldstandard)
-
-          mergeddf = subdf.merge(golddf, on = ['filename'], how='left')
+          
           
           result['score'] = 70
 
