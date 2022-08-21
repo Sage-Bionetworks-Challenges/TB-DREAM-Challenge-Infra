@@ -45,14 +45,15 @@ requirements:
 
           args = parser.parse_args()
           result = {}
-
+          
+          score = 1 + 1
           prediction_file_status = "SCORED"
-          
-          
-          result['score'] = 70
 
+          result = {'auc': score,
+                    'submission_status': prediction_file_status}
           with open(args.results, 'w') as o:
             o.write(json.dumps(result))
+          
      
 outputs:
   - id: results
