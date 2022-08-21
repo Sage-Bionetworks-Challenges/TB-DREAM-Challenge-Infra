@@ -13,6 +13,8 @@ requirements:
         #!/usr/bin/env python
         import argparse
         import json
+        import os
+        
         parser = argparse.ArgumentParser()
         parser.add_argument("-r", "--results", required=True, help="validation results")
         parser.add_argument("-e", "--entity_type", required=True, help="synapse entity type downloaded")
