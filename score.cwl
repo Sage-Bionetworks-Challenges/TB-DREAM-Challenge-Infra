@@ -36,7 +36,7 @@ requirements:
           #!/usr/bin/env python
           import argparse
           import json
-          from sklearn import metrics
+          
 
           parser = argparse.ArgumentParser()
           parser.add_argument("-f", "--submissionfile", required=True, help="Submission File")
@@ -51,11 +51,8 @@ requirements:
           golddf = pd.read_csv(args.goldstandard)
 
           mergeddf = subdf.merge(golddf, on = ['filename'], how='left')
-          #setosa : target class in data
-          fpr, tpr, thresholds = metrics.roc_curve(mergeddf['label'], mergeddf['class_0_pp'], 
-                                                    pos_label='setosa')
-          auc_score = metrics.auc(fpr, tpr)
-          result['score'] = auc_score
+          
+          result['score'] = 70
 
           with open(args.results, 'w') as o:
             o.write(json.dumps(result))
