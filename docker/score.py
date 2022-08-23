@@ -42,7 +42,7 @@ def score(gold, pred):
     acc = (tp + tn) / (tp + fp + fn + tn)
     sens = tp / (tp + fn)
     spec = tn / (tn + fp)
-    mcc = matthews_corrcoef(gold[col], pred[col])
+    mcc = matthews_corrcoef(gold['label'], pred['prediction'])
 
     return {
         'auc_roc': roc, 'auprc': pr,
