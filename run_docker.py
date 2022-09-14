@@ -176,14 +176,16 @@ def main(syn, args):
     remove_docker_image(docker_image)
 
     output_folder = os.listdir(output_dir)
-    print('..............')
-    print(output_folder)
-    print('..............')
+    onnx_file = [string for string in output_folder if string.endswith('.onnx')]
+    
     if not output_folder:
         raise Exception("No 'predictions.csv' file written to /output, "
                         "please check inference docker")
     elif "predictions.csv" not in output_folder:
         raise Exception("No 'predictions.csv' file written to /output, "
+                        "please check inference docker")
+    elif len(onnx_file) == 0:
+        raise Exception("No 'ONNX format model' file written to /output, "
                         "please check inference docker")
     # CWL has a limit of the array of files it can accept in a folder
     # therefore creating a tarball is sometimes necessary
