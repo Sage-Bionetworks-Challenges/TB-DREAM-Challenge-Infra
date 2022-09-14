@@ -176,6 +176,9 @@ def main(syn, args):
     remove_docker_image(docker_image)
 
     output_folder = os.listdir(output_dir)
+    print('..............')
+    print(output_folder)
+    print('..............')
     if not output_folder:
         raise Exception("No 'predictions.csv' file written to /output, "
                         "please check inference docker")
