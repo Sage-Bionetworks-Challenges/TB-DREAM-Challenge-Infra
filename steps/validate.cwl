@@ -39,7 +39,7 @@ requirements:
                   with open(args.submission_file,"r") as sub_file:
                       message = sub_file.read()
                   
-                  if not message.startswith("filename,prediction"):
+                  if not message.startswith("StudyID,Prediction"):
                       invalid_reasons.append("Submission must have filename and prediction column")
                       prediction_file_status = "INVALID"
 
