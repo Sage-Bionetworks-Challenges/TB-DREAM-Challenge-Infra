@@ -228,8 +228,8 @@ if __name__ == '__main__':
                         help="Docker Repository")
     parser.add_argument("-d", "--docker_digest", required=True,
                         help="Docker Digest")
-    parser.add_argument("-i", "--input_dir", required=True,
-                        help="Input Directory")
+    parser.add_argument("-t", "--task_number", choices=["1", "2"], required=True,
+                        help="Task number of submission")
     parser.add_argument("-c", "--synapse_config", required=True,
                         help="credentials file")
     parser.add_argument("--store", action='store_true',
