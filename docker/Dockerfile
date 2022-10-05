@@ -4,5 +4,7 @@ RUN pip install pandas numpy sklearn
 
 
 COPY score.py /usr/local/bin/.
+COPY validate.py /usr/local/bin/.
 
 RUN chmod +x /usr/local/bin/score.py
+RUN chmod +x /usr/local/bin/validate.py
