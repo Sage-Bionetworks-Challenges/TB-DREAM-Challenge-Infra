@@ -13,6 +13,8 @@ inputs:
     type: File
   - id: goldstandard
     type: File
+  - id: task_number
+    type: string
   - id: check_validation_finished
     type: boolean?
 
@@ -35,6 +37,8 @@ arguments:
     valueFrom: $(inputs.input_file.path)
   - prefix: -g
     valueFrom: $(inputs.goldstandard.path)
+  - prefix: -t
+    valueFrom: $(inputs.task_number)
   - prefix: -o
     valueFrom: results.json
 

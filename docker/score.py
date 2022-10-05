@@ -27,6 +27,7 @@ def get_args():
                         type=str, required=True)
     parser.add_argument("-g", "--goldstandard_file",
                         type=str, required=True)
+    parser.add_argument("-t", "--task", type=str, default="1")
     parser.add_argument("-o", "--output", type=str, default="results.json")
     return parser.parse_args()
 
@@ -36,13 +37,13 @@ def score(gold, pred):
     Calculate metrics for: AUC-ROC, AUCPR, accuracy,
     sensitivity, specificity, and MCC (for funsies).
     """
-    roc = roc_auc_score(gold['label'], pred['prediction'])
-    pr = average_precision_score(gold['label'], pred['prediction'])
-    tn, fp, fn, tp = confusion_matrix(gold['label'], pred['prediction']).ravel()
+    roc = roc_auc_score(gold['label'], pred['tb_status'])
+    pr = average_precision_score(gold['label'], pred['tb_status'])
+    tn, fp, fn, tp = confusion_matrix(gold['label'], pred['tb_status']).ravel()
     acc = (tp + tn) / (tp + fp + fn + tn)
     sens = tp / (tp + fn)
     spec = tn / (tn + fp)
-    mcc = matthews_corrcoef(gold['label'], pred['prediction'])
+    mcc = matthews_corrcoef(gold['label'], pred['tb_status'])
 
     return {
         'auc_roc': roc, 'auprc': pr,

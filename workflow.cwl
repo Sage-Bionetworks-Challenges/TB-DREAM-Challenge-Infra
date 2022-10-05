@@ -84,12 +84,20 @@ steps:
       - id: docker_registry
       - id: docker_authentication
 
+  get_goldstandard_id:
+    run: steps/get_goldstandard_id.cwl
+    in:
+      - id: task_number
+        source: "#determine_question/task_number"
+    out:
+      - id: synid
+
   download_goldstandard:
     run: https://raw.githubusercontent.com/Sage-Bionetworks-Workflows/cwl-tool-synapseclient/v1.4/cwl/synapse-get-tool.cwl
     in:
       # TODO: replace `valueFrom` with the Synapse ID to the challenge goldstandard
       - id: synapseid
-        valueFrom: "syn34897072"
+        valueFrom: "#get_goldstandard_id/synid"
       - id: synapse_config
         source: "#synapseConfig"
     out:
@@ -149,6 +157,14 @@ steps:
         source: "#email_docker_validation/finished"
     out: [finished]
 
+  determine_question:
+    run: steps/determine_question.cwl
+    in:
+      - id: queue
+        source: "#get_docker_submission/evaluation_id"
+    out:
+      - id: task_number
+
   run_docker:
     run: steps/run_docker.cwl
     in:
@@ -172,8 +188,8 @@ steps:
       - id: store
         default: true
       # TODO: replace `valueFrom` with the absolute path to the data directory to be mounted
-      - id: input_dir
-        valueFrom: "/home/ssm-user/TB_CHALLENGE_VALIDATION_DATA"
+      - id: task_number
+        source: "#determine_question/task_number"
       - id: docker_script
         default:
           class: File
@@ -221,8 +237,10 @@ steps:
     in:
       - id: input_file
         source: "#run_docker/predictions"
-      - id: entity_type
-        source: "#get_docker_submission/entity_type"
+      - id: goldstandard
+        source: "#download_goldstandard/filepath"
+      - id: task_number
+        source: "#determine_question/task_number"
     out:
       - id: results
       - id: status
@@ -279,6 +297,8 @@ steps:
         source: "#run_docker/predictions"
       - id: goldstandard
         source: "#download_goldstandard/filepath"
+      - id: task_number
+        source: "#determine_question/task_number"
       - id: check_validation_finished 
         source: "#check_status/finished"
     out:

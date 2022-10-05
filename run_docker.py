@@ -21,11 +21,35 @@ def create_log_file(log_filename, log_text=None):
             log_file.write("No Logs")
 
 
+def get_last_lines(log_filename, n=5):
+    """Get last N lines of log file (default=5)."""
+    lines = 0
+    with open(log_filename, "rb") as f:
+        try:
+            f.seek(-2, os.SEEK_END)
+            # Keep reading, starting at the end, until n lines is read.
+            while lines < n:
+                f.seek(-2, os.SEEK_CUR)
+                if f.read(1) == b"\n":
+                    lines += 1
+        except OSError:
+            # If file only contains one line, then only read that one
+            # line.  This exception will probably never occur, but
+            # adding it in, just in case.
+            f.seek(0)
+        last_lines = f.read().decode()
+    return last_lines
+
 def store_log_file(syn, log_filename, parentid, store=True):
     """Store log file"""
     statinfo = os.stat(log_filename)
-    if statinfo.st_size > 0 and statinfo.st_size/1000.0 <= 50:
+    if statinfo.st_size > 0:
+        # If log file is larger than 50Kb, only save last 5 lines.
+        if statinfo.st_size/1000.0 > 50:
+            log_tail = get_last_lines(log_filename)
+            create_log_file(log_filename, log_tail)
         ent = synapseclient.File(log_filename, parent=parentid)
+
         if store:
             try:
                 syn.store(ent)
@@ -102,7 +126,11 @@ def main(syn, args):
     # These are the volumes that you want to mount onto your docker container
     #output_dir = os.path.join(os.getcwd(), "output")
     output_dir = os.getcwd()
-    input_dir = args.input_dir
+    #input_dir = args.input_dir
+    if args.task_number == "1":
+        input_dir = "/home/ssm-user/TB_CHALLENGE_LEADERSHIP_DATA"
+    else:
+        input_dir = "/home/ssm-user/TB_CHALLENGE_VALIDATION_DATA"
 
     print("mounting volumes")
     # These are the locations on the docker that you want your mounted
