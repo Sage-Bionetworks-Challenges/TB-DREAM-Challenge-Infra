@@ -47,7 +47,7 @@ arguments:
   - valueFrom: $(inputs.synapse_config.path)
     prefix: -c
   - valueFrom: $(inputs.task_number)
-    prefix: -i
+    prefix: -t
 
 requirements:
   - class: InitialWorkDirRequirement
