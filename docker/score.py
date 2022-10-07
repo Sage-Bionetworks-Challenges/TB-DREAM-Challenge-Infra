@@ -11,6 +11,8 @@ Task 1 and 2 will return the same metrics:
 
 import argparse
 import json
+import os
+import glob
 
 import pandas as pd
 from sklearn.metrics import (roc_auc_score,
@@ -38,7 +40,7 @@ def get_args():
 
 def tpROC(df):
     r = robjects.r
-    r['source']('two_way_partial_AUC.R')
+    r['source']('/usr/local/bin/two_way_partial_AUC.R')
 
     sensitivity_bound = 0.8
     specificity_bound = 0.6
