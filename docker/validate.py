@@ -12,7 +12,6 @@ import numpy as np
 
 COLS = {
         'participant': str,
-        'tb_status': np.int8,
         'probability': np.float64
         }
 
@@ -110,7 +109,6 @@ def validate(gold_file, pred_file):
         errors.append(check_missing_ids(gold, pred))
         errors.append(check_unknown_ids(gold, pred))
         errors.append(check_nan_values(pred))
-        errors.append(check_binary_values(pred))
         errors.append(check_prob_values(pred))
     return errors
 
