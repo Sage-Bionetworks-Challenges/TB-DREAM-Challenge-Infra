@@ -20,7 +20,11 @@ expression: |
   ${
     if(inputs.task_number == "1") {
       return {synid: "syn43372449"};
-    } else {
+    } else if (inputs.task_number == "2") {
+      return {synid: "syn43372436"};
+    } else if (inputs.task_number == "3") {
+      return {synid: "syn43372449"};
+    } else if (inputs.task_number == "4") {
       return {synid: "syn43372436"};
     }
   }

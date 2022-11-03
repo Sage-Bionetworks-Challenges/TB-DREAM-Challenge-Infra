@@ -128,9 +128,13 @@ def main(syn, args):
     output_dir = os.getcwd()
     #input_dir = args.input_dir
     if args.task_number == "1":
-        input_dir = "/home/ssm-user/TB_CHALLENGE_LEADERSHIP_DATA"
-    else:
-        input_dir = "/home/ssm-user/TB_CHALLENGE_VALIDATION_DATA"
+        input_dir = "/home/ssm-user/TB_CHALLENGE_LEADERSHIP_DATA_SC1"
+    elif args.task_number == "2":
+        input_dir = "/home/ssm-user/TB_CHALLENGE_VALIDATION_DATA_SC1"
+    elif args.task_number == "3":
+        input_dir = "/home/ssm-user/TB_CHALLENGE_LEADERSHIP_DATA_SC2"
+    elif args.task_number == "4":
+        input_dir = "/home/ssm-user/TB_CHALLENGE_VALIDATION_DATA_SC2"
 
     print("mounting volumes")
     # These are the locations on the docker that you want your mounted

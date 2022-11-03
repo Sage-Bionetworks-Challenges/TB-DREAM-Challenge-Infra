@@ -22,6 +22,10 @@ expression: |
       return {task_number: "1"};
     } else if (inputs.queue == "9615047") {
       return {task_number: "2"};
+    } else if (inputs.queue == "9615106") {
+      return {task_number: "3"};
+    } else if (inputs.queue == "9615107") {
+      return {task_number: "4"};
     } else {
       throw 'invalid queue';
     }
