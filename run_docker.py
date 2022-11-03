@@ -232,7 +232,7 @@ if __name__ == '__main__':
                         help="Docker Repository")
     parser.add_argument("-d", "--docker_digest", required=True,
                         help="Docker Digest")
-    parser.add_argument("-t", "--task_number", choices=["1", "2"], required=True,
+    parser.add_argument("-t", "--task_number", choices=["1", "2", "3", "4"], required=True,
                         help="Task number of submission")
     parser.add_argument("-c", "--synapse_config", required=True,
                         help="credentials file")
