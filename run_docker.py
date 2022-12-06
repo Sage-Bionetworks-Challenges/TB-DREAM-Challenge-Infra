@@ -45,7 +45,7 @@ def store_log_file(syn, log_filename, parentid, store=True):
     statinfo = os.stat(log_filename)
     if statinfo.st_size > 0:
         # If log file is larger than 50Kb, only save last 5 lines.
-        if statinfo.st_size/1000.0 > 50:
+        if statinfo.st_size/1000.0 > 20:
             log_tail = get_last_lines(log_filename)
             create_log_file(log_filename, log_tail)
         ent = synapseclient.File(log_filename, parent=parentid)
