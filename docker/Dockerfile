@@ -1,6 +1,6 @@
 FROM python:3.9.1-slim-buster
 
-RUN pip install pandas numpy sklearn
+RUN pip install pandas numpy scikit-learn
 RUN apt-get --force-yes update \
     && apt-get --assume-yes install r-base-core
 
