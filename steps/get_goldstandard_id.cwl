@@ -26,5 +26,9 @@ expression: |
       return {synid: "syn43372449"};
     } else if (inputs.task_number == "4") {
       return {synid: "syn43372436"};
+    } else if (inputs.task_number == "5") {
+      return {synid: "syn52703865"};
+    } else if (inputs.task_number == "6") {
+      return {synid: "syn52703865"};
     }
   }
