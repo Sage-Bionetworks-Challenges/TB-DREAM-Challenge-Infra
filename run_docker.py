@@ -140,6 +140,10 @@ def main(syn, args):
         input_dir = "/home/ssm-user/TB_CHALLENGE_LEADERSHIP_DATA_SC2"
     elif args.task_number == "4":
         input_dir = "/home/ssm-user/TB_CHALLENGE_VALIDATION_DATA_SC2"
+    elif args.task_number == "5":
+        input_dir = "/home/ssm-user/TB_CHALLENGE_DATA_SC1"
+    elif args.task_number == "6":
+        input_dir = "/home/ssm-user/TB_CHALLENGE_DATA_SC2"
 
     print("mounting volumes")
     # These are the locations on the docker that you want your mounted
@@ -237,7 +241,7 @@ if __name__ == '__main__':
                         help="Docker Repository")
     parser.add_argument("-d", "--docker_digest", required=True,
                         help="Docker Digest")
-    parser.add_argument("-t", "--task_number", choices=["1", "2", "3", "4"], required=True,
+    parser.add_argument("-t", "--task_number", choices=["1", "2", "3", "4", "5", "6"], required=True,
                         help="Task number of submission")
     parser.add_argument("-c", "--synapse_config", required=True,
                         help="credentials file")
