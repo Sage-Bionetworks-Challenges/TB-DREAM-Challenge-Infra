@@ -165,6 +165,19 @@ steps:
         source: "#get_docker_submission/evaluation_id"
     out:
       - id: task_number
+      - id: gt_synid
+
+  download_goldstandard:
+    doc: Download groundtruth file
+    run: |-
+      https://raw.githubusercontent.com/Sage-Bionetworks-Workflows/cwl-tool-synapseclient/v1.4/cwl/synapse-get-tool.cwl
+    in:
+      - id: synapseid
+        source: "#determine_question/gt_synid"
+      - id: synapse_config
+        source: "#synapseConfig"
+    out:
+      - id: filepath
 
   run_docker:
     run: steps/run_docker.cwl
