@@ -2,11 +2,7 @@
 
 cwlVersion: v1.0
 class: Workflow
-label: <YOUR CHALLENGE> Evaluation
-doc: >
-  BRIEF DESCRIPTION ABOUT THE CHALLENGE, e.g.
-  This workflow will run and evaluate Docker submissions to the
-  Awesome Challenge (syn123). Metrics returned are x, y, z.
+label: CODA TB Chalenge evaluation workflow
 
 requirements:
   - class: StepInputExpressionRequirement
