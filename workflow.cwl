@@ -23,8 +23,12 @@ inputs:
   workflowSynapseId:
     label: Synapse File ID that links to the workflow
     type: string
+  organizersId:
+    label: User or team ID for challenge organizers
+    type: string
+    default: "3449996"
 
-outputs: {}
+outputs: []
 
 steps:
 
@@ -49,7 +53,7 @@ steps:
         source: "#adminUploadSynId"
       # TODO: replace `valueFrom` with the admin user ID or admin team ID
       - id: principalid
-        valueFrom: "3449996"
+        source: "#organizersId"
       - id: permissions
         valueFrom: "download"
       - id: synapse_config
