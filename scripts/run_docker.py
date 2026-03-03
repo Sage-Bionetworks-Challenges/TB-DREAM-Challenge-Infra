@@ -5,7 +5,7 @@ from __future__ import print_function
 import argparse
 import glob
 import json
-import os
+from pathlib import Path
 import shutil
 import tempfile
 
@@ -226,10 +226,11 @@ def main(args):
                 invalid_reasons = run_error
             else:
                 output_files = glob.glob(os.path.join(output_dir, "*.onnx"))
-                for filepath in output_files:
-                    filename = os.path.basename(filepath)
-                    dest = os.path.join(current_working_dir, filename)
-                    shutil.move(filepath, dest)
+                if output_files:
+                    for filepath in output_files:
+                        filename = os.path.basename(filepath)
+                        dest = os.path.join(current_working_dir, filename)
+                        shutil.move(filepath, dest)
                 else:
                     status = "INVALID"
                     invalid_reasons = (
