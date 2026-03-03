@@ -128,7 +128,7 @@ steps:
       - id: docker_script
         default:
           class: File
-          location: "run_docker.py"
+          location: "scripts/run_docker.py"
     out:
       - id: predictions
       - id: results
@@ -189,7 +189,7 @@ steps:
 
   upload_generated_predictions:
     doc: Upload the generated predictions file to the private folder
-    run: steps/upload-predictions.cwl
+    run: steps/upload_predictions.cwl
     in:
       - id: infile
         source: "#run_docker/predictions"
