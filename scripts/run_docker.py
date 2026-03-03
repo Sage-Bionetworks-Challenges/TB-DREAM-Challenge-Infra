@@ -200,6 +200,7 @@ def main(args):
 
     status = "VALIDATED_DOCKER"
     invalid_reasons = ""
+    expected_output = "predictions.csv"
 
     # Initial check for valid Docker image submission; skip to end if invalid.
     if not args.docker_repository and not args.docker_digest:
@@ -225,15 +226,26 @@ def main(args):
                 status = "INVALID"
                 invalid_reasons = run_error
             else:
-                output_files = glob.glob(os.path.join(output_dir, "*.onnx"))
-                if not output_files:
+                output_file = glob.glob(os.path.join(output_dir, expected_output))
+                onnx_files = glob.glob(os.path.join(output_dir, "*.onnx"))
+                if not output_file:
+                    status = "INVALID"
+                    invalid_reasons = (
+                        f"No '{expected_output}' file written to /output, "
+                        "please check your model and try again."
+                    )
+                elif not onnx_files:
                     status = "INVALID"
                     invalid_reasons = (
                         "No 'ONNX format model' file written to /output, "
                         "please check your model and try again."
                     )
                 else:
-                    for filepath in output_files:
+                    shutil.move(
+                        output_file[0],
+                        os.path.join(current_working_dir, expected_output),
+                    )
+                    for filepath in onnx_files:
                         filename = os.path.basename(filepath)
                         dest = os.path.join(current_working_dir, filename)
                         shutil.move(filepath, dest)
