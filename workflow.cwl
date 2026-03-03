@@ -107,7 +107,7 @@ steps:
   run_docker:
     doc: >
       Run the participant Docker container against the input data to generate predictions
-    run: steps/run-docker.cwl
+    run: steps/run_docker.cwl
     in:
       - id: docker_repository
         source: "#get_docker_submission/docker_repository"
@@ -196,7 +196,7 @@ steps:
       - id: parentid
         source: "#adminUploadSynId"
       - id: used_entity
-        source: "#download_submission/entity_id"
+        source: "#get_docker_submission/entity_id"
       - id: executed_entity
         source: "#workflowSynapseId"
       - id: synapse_config
