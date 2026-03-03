@@ -5,7 +5,7 @@ from __future__ import print_function
 import argparse
 import glob
 import json
-from pathlib import Path
+import os
 import shutil
 import tempfile
 
@@ -226,17 +226,18 @@ def main(args):
                 invalid_reasons = run_error
             else:
                 output_files = glob.glob(os.path.join(output_dir, "*.onnx"))
-                if output_files:
-                    for filepath in output_files:
-                        filename = os.path.basename(filepath)
-                        dest = os.path.join(current_working_dir, filename)
-                        shutil.move(filepath, dest)
-                else:
+                if not output_files:
                     status = "INVALID"
                     invalid_reasons = (
                         "No 'ONNX format model' file written to /output, "
                         "please check your model and try again."
                     )
+                else:
+                    for filepath in output_files:
+                        filename = os.path.basename(filepath)
+                        dest = os.path.join(current_working_dir, filename)
+                        shutil.move(filepath, dest)
+
         remove_docker_image(client, f"{args.docker_repository}@{args.docker_digest}")
 
     with open("results.json", "w") as out:
