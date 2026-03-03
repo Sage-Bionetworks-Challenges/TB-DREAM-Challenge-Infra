@@ -238,6 +238,8 @@ steps:
         source: "#download_goldstandard/filepath"
       - id: task_number
         source: "#determine_question/task_number"
+      - id: previous_annotation_finished
+        source: "#annotate_docker_upload_results/finished"
     out:
       - id: results
       - id: status
