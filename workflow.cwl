@@ -325,7 +325,7 @@ steps:
       - id: results
         source: "#score/results"
       - id: private_annotations
-        default: ['auc_roc', 'tpAUC', 'pAucSe', 'pAucSp']
+        default: []
     out: []
 
   add_score_annots:
