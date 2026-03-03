@@ -15,6 +15,8 @@ inputs:
     type: File
   - id: task_number
     type: string
+  - id: previous_annotation_finished
+    type: boolean?
 
 outputs:
   - id: results
