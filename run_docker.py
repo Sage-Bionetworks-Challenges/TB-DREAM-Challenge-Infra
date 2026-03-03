@@ -1,18 +1,41 @@
-"""Run training synthetic docker models"""
+"""Run participant Docker model and store logs."""
+
 from __future__ import print_function
+
 import argparse
-import getpass
+import glob
+import json
 import os
-import tarfile
-import time
+import tempfile
 
 import docker
+import requests
 import synapseclient
+
+
+def get_docker_client_and_login(
+    synapse_config_path: str,
+) -> docker.DockerClient:
+    """
+    Initializes the Docker client and log into the Synapse Docker Registry.
+    """
+    try:
+        client = docker.DockerClient(base_url="unix://var/run/docker.sock")
+        config = synapseclient.Synapse().getConfigFile(configPath=synapse_config_path)
+        authen = dict(config.items("authentication"))
+        client.login(
+            username=authen["username"],
+            password=authen["authtoken"],
+            registry="https://docker.synapse.org",
+        )
+    except docker.errors.APIError:
+        client = docker.from_env()
+    return client
 
 
 def create_log_file(log_filename, log_text=None):
     """Create log file"""
-    with open(log_filename, 'w') as log_file:
+    with open(log_filename, "w") as log_file:
         if log_text is not None:
             if isinstance(log_text, bytes):
                 log_text = log_text.decode("utf-8")
@@ -26,35 +49,33 @@ def create_log_file(log_filename, log_text=None):
             log_file.write("No Logs")
 
 
-def get_last_lines(log_filename, n=5):
-    """Get last N lines of log file (default=5)."""
-    lines = 0
+def get_log_tail(log_filename: str, n: int = 5) -> str:
+    """Reads the last N lines of a log file."""
     with open(log_filename, "rb") as f:
         try:
             f.seek(-2, os.SEEK_END)
+
             # Keep reading, starting at the end, until n lines is read.
-            while lines < n:
+            lines_read = 0
+            while lines_read < n:
                 f.seek(-2, os.SEEK_CUR)
                 if f.read(1) == b"\n":
-                    lines += 1
+                    lines_read += 1
         except OSError:
-            # If file only contains one line, then only read that one
-            # line.  This exception will probably never occur, but
-            # adding it in, just in case.
+            # If file only contains one line, only read that one line.
             f.seek(0)
-        last_lines = f.read().decode()
-    return last_lines
+        return f.read().decode()
+
 
 def store_log_file(syn, log_filename, parentid, store=True):
     """Store log file"""
     statinfo = os.stat(log_filename)
     if statinfo.st_size > 0:
-        # If log file is larger than 50Kb, only save last 5 lines.
-        if statinfo.st_size/1000.0 > 20:
-            log_tail = get_last_lines(log_filename)
+        # If log file is larger than 50Kb, only save last few lines.
+        if statinfo.st_size / 1000.0 > 50:
+            log_tail = get_log_tail(log_filename)
             create_log_file(log_filename, log_tail)
         ent = synapseclient.File(log_filename, parent=parentid)
-
         if store:
             try:
                 syn.store(ent)
@@ -62,195 +83,218 @@ def store_log_file(syn, log_filename, parentid, store=True):
                 print(err)
 
 
-def remove_docker_container(container_name):
+def remove_docker_container(client, container_name):
     """Remove docker container"""
-    client = docker.from_env()
     try:
         cont = client.containers.get(container_name)
         cont.stop()
         cont.remove()
     except Exception:
-        print("Unable to remove container")
+        print(f"Unable to remove container: {container_name}")
 
 
-def remove_docker_image(image_name):
+def pull_docker_image(client, image_name):
+    """Pull docker image"""
+    try:
+        client.images.pull(image_name)
+    except docker.errors.ImageNotFound:
+        print(f"Image incompatible with the `linux/amd64 architecture; try again.")
+    except Exception:
+        print(f"Unable to pull image: {image_name}")
+
+
+def remove_docker_image(client, image_name):
     """Remove docker image"""
-    client = docker.from_env()
     try:
         client.images.remove(image_name, force=True)
     except Exception:
-        print("Unable to remove image")
+        print(f"Unable to remove image: {image_name}")
 
 
-def tar(directory, tar_filename):
-    """Tar all files in a directory
+def run_docker(syn, args, docker_client, output_dir_to_mount):
+    """Run the participant's Docker model.
 
-    Args:
-        directory: Directory path to files to tar
-        tar_filename:  tar file path
+    The container execution is subject to a time limit. This timeout ensures
+    the system prevents resource exhaustion and keeps the evaluation queue moving.
     """
-    with tarfile.open(tar_filename, "w") as tar_o:
-        tar_o.add(directory)
-    # TODO: Potentially add code to remove all files that were zipped.
+    docker_image = f"{args.docker_repository}@{args.docker_digest}"
+    container_name = f"{args.submissionid}-docker_run"
+    log_filename = f"{args.submissionid}-docker_logs.txt"
+    timeout = args.container_time_limit
 
+    print("Mounting volumes...")
+    volumes = {
+        args.input_dir: {
+            "bind": "/input",
+            "mode": "ro",
+        },
+        output_dir_to_mount: {
+            "bind": "/output",
+            "mode": "rw",
+        },
+    }
 
-def untar(directory, tar_filename):
-    """Untar a tar file into a directory
+    # Remove any pre-existing container with the same name
+    remove_docker_container(docker_client, container_name)
 
-    Args:
-        directory: Path to directory to untar files
-        tar_filename:  tar file path
-    """
-    with tarfile.open(tar_filename, "r") as tar_o:
-        tar_o.extractall(path=directory)
+    print("Pulling submitted Docker image...")
+    try:
+        docker_client.images.pull(docker_image)
+    except docker.errors.APIError as err:
+        errors = f"Unable to pull image: {err}"
+        return False, errors
 
-
-def main(syn, args):
-    """Run docker model"""
-    if args.status == "INVALID":
-        raise Exception("Docker image is invalid")
-
-    # The new toil version doesn't seem to pull the docker config file from
-    # .docker/config.json...
-    # client = docker.from_env()
-    client = docker.DockerClient(base_url='unix://var/run/docker.sock')
-    config = synapseclient.Synapse().getConfigFile(
-        configPath=args.synapse_config
-    )
-    authen = dict(config.items("authentication"))
-    client.login(username=authen['username'],
-                 password=authen['password'],
-                 registry="https://docker.synapse.org")
-                 # dockercfg_path=".docker/config.json")
-
-    print(getpass.getuser())
-
-    # Add docker.config file
-    docker_image = args.docker_repository + "@" + args.docker_digest
-
-    # These are the volumes that you want to mount onto your docker container
-    #output_dir = os.path.join(os.getcwd(), "output")
-    output_dir = os.getcwd()
-    #input_dir = args.input_dir
-    if args.task_number == "1":
-        input_dir = "/home/ssm-user/TB_CHALLENGE_LEADERSHIP_DATA_SC1"
-    elif args.task_number == "2":
-        input_dir = "/home/ssm-user/TB_CHALLENGE_VALIDATION_DATA_SC1"
-    elif args.task_number == "3":
-        input_dir = "/home/ssm-user/TB_CHALLENGE_LEADERSHIP_DATA_SC2"
-    elif args.task_number == "4":
-        input_dir = "/home/ssm-user/TB_CHALLENGE_VALIDATION_DATA_SC2"
-    elif args.task_number == "5":
-        input_dir = "/home/ssm-user/TB_CHALLENGE_DATA_SC1"
-    elif args.task_number == "6":
-        input_dir = "/home/ssm-user/TB_CHALLENGE_DATA_SC2"
-
-    print("mounting volumes")
-    # These are the locations on the docker that you want your mounted
-    # volumes to be + permissions in docker (ro, rw)
-    # It has to be in this format '/output:rw'
-    mounted_volumes = {output_dir: '/output:rw',
-                       input_dir: '/input:ro'}
-    # All mounted volumes here in a list
-    all_volumes = [output_dir, input_dir]
-    # Mount volumes
-    volumes = {}
-    for vol in all_volumes:
-        volumes[vol] = {'bind': mounted_volumes[vol].split(":")[0],
-                        'mode': mounted_volumes[vol].split(":")[1]}
-
-    # Look for if the container exists already, if so, reconnect
-    print("checking for containers")
+    print(f"Running container '{container_name}'...")
     container = None
-    errors = None
-    for cont in client.containers.list(all=True, ignore_removed=True):
-        if args.submissionid in cont.name:
-            # Must remove container if the container wasn't killed properly
-            if cont.status == "exited":
-                cont.remove()
-            else:
-                container = cont
-    # If the container doesn't exist, make sure to run the docker image
-    if container is None:
-        # Run as detached, logs will stream below
-        print("running container")
-        try:
-            container = client.containers.run(docker_image,
-                                              detach=True, volumes=volumes,
-                                              name=args.submissionid,
-                                              network_disabled=True,
-                                              mem_limit='20g', stderr=True)
-        except docker.errors.APIError as err:
-            remove_docker_container(args.submissionid)
-            errors = str(err) + "\n"
+    success = False
+    log_text = ""
 
-    print("creating logfile")
-    # Create the logfile
-    log_filename = args.submissionid + "_log.txt"
-    # Open log file first
-    open(log_filename, 'w').close()
+    try:
+        container = docker_client.containers.run(
+            docker_image,
+            detach=True,
+            volumes=volumes,
+            name=container_name,
+            network_disabled=True,
+            mem_limit="20g",
+            stderr=True,
+        )
 
-    # If the container doesn't exist, there are no logs to write out and
-    # no container to remove
-    if container is not None:
-        # Check if container is still running
-        while container in client.containers.list(ignore_removed=True):
-            log_text = container.logs()
-            create_log_file(log_filename, log_text=log_text)
-            store_log_file(syn, log_filename, args.parentid, store=args.store)
-            time.sleep(60)
-        # Must run again to make sure all the logs are captured
-        log_text = container.logs()
+        # Wait for the container to finish.
+        result = container.wait(timeout=timeout)
+        exit_code = result.get("StatusCode", 0)
+        success = exit_code == 0
+
+        if success:
+            raw_logs = container.logs().decode("utf-8", errors="replace")
+            log_text = (
+                raw_logs
+                if raw_logs.strip()
+                else "Container finished but produced no logs."
+            )
+        else:
+            log_text = f"Container exited with non-zero code: {exit_code}"
+
+    # Case: Container execution exceeds time limit.
+    except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError):
+        log_text = (
+            f"Container exceeded execution time limit of {timeout / 60:.1f} "
+            "minutes; stopping container."
+        )
+
+    # Case: General exception occurred during container execution.
+    except Exception as err:
+        log_text = f"Error running container:\n{err}"
+
+    finally:
+        remove_docker_container(docker_client, container_name)
         create_log_file(log_filename, log_text=log_text)
         store_log_file(syn, log_filename, args.parentid, store=args.store)
-        # Remove container and image after being done
-        container.remove()
 
-    statinfo = os.stat(log_filename)
-
-    if statinfo.st_size == 0:
-        create_log_file(log_filename, log_text=errors)
-        store_log_file(syn, log_filename, args.parentid, store=args.store)
-
-    print("finished training")
-    # Try to remove the image
-    remove_docker_image(docker_image)
-
-    output_folder = os.listdir(output_dir)
-    onnx_file = [string for string in output_folder if string.endswith('.onnx')]
-    
-    if not output_folder:
-        raise Exception("No 'predictions.csv' file written to /output, "
-                        "please check inference docker")
-    elif "predictions.csv" not in output_folder:
-        raise Exception("No 'predictions.csv' file written to /output, "
-                        "please check inference docker")
-    elif len(onnx_file) == 0:
-        raise Exception("No 'ONNX format model' file written to /output, "
-                        "please check inference docker")
-    # CWL has a limit of the array of files it can accept in a folder
-    # therefore creating a tarball is sometimes necessary
-    # tar(output_dir, 'outputs.tar.gz')
+    return success, log_text
 
 
-if __name__ == '__main__':
+def main(args):
+    """Main function."""
+
+    status = "VALIDATED_DOCKER"
+    invalid_reasons = ""
+
+    # Initial check for valid Docker image submission; skip to end if invalid.
+    if not args.docker_repository and not args.docker_digest:
+        status = "INVALID"
+        invalid_reasons = "Submission is not a Docker image, please try again."
+    else:
+        # Login to Synapse.
+        syn = synapseclient.Synapse(configPath=args.synapse_config)
+        syn.login(silent=True)
+
+        # Login to the Synapse docker registry.
+        client = get_docker_client_and_login(args.synapse_config)
+
+        # Create temporary output directory to mount to container
+        current_working_dir = os.getcwd()
+        with tempfile.TemporaryDirectory(dir=current_working_dir) as output_dir:
+
+            # Update permissions so that non-root container can write to it
+            os.chmod(output_dir, 0o777)
+
+            success, run_error = run_docker(syn, args, client, output_dir)
+            if not success:
+                status = "INVALID"
+                invalid_reasons = run_error
+            else:
+                output_file = glob.glob(os.path.join(output_dir, "*.onnx"))
+                if output_file:
+                    os.rename(
+                        output_dir,
+                        os.path.join(current_working_dir),
+                    )
+                else:
+                    status = "INVALID"
+                    invalid_reasons = (
+                        "No 'ONNX format model' file written to /output, "
+                        "please check your model and try again."
+                    )
+        remove_docker_image(client, f"{args.docker_repository}@{args.docker_digest}")
+
+    with open("results.json", "w") as out:
+        out.write(
+            json.dumps(
+                {
+                    "submission_status": status,
+                    "submission_errors": invalid_reasons,
+                    "admin_folder": args.parentid,
+                }
+            )
+        )
+
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-s", "--submissionid", required=True,
-                        help="Submission Id")
-    parser.add_argument("-p", "--docker_repository", required=True,
-                        help="Docker Repository")
-    parser.add_argument("-d", "--docker_digest", required=True,
-                        help="Docker Digest")
-    parser.add_argument("-t", "--task_number", choices=["1", "2", "3", "4", "5", "6"], required=True,
-                        help="Task number of submission")
-    parser.add_argument("-c", "--synapse_config", required=True,
-                        help="credentials file")
-    parser.add_argument("--store", action='store_true',
-                        help="to store logs")
-    parser.add_argument("--parentid", required=True,
-                        help="Parent Id of submitter directory")
-    parser.add_argument("--status", required=True, help="Docker image status")
+    parser.add_argument(
+        "-c",
+        "--synapse_config",
+        required=True,
+        help="Filepath to Synapse credentials file",
+    )
+    parser.add_argument(
+        "-s",
+        "--submissionid",
+        required=True,
+        help="Submission ID",
+    )
+    parser.add_argument(
+        "--parentid",
+        required=True,
+        help="Parent Synapse ID (Folder) for storing logs",
+    )
+    parser.add_argument(
+        "--docker_repository",
+        required=True,
+        help="Docker image name",
+    )
+    parser.add_argument(
+        "--docker_digest",
+        required=True,
+        help="Docker digest",
+    )
+    parser.add_argument(
+        "-i",
+        "--input_dir",
+        required=True,
+        help="Absolute path to the input data directory",
+    )
+    parser.add_argument(
+        "--container_time_limit",
+        type=int,
+        default=7200,
+        help="Container execution timeout in seconds (default: 7200s / 2h)",
+    )
+    parser.add_argument(
+        "--store",
+        action="store_true",
+        help="Store container logs in Synapse",
+    )
     args = parser.parse_args()
-    syn = synapseclient.Synapse(configPath=args.synapse_config)
-    syn.login()
-    main(syn, args)
+    main(args)
