@@ -165,16 +165,12 @@ def run_docker(syn, args, docker_client, output_dir_to_mount):
         result = container.wait(timeout=timeout)
         exit_code = result.get("StatusCode", 0)
         success = exit_code == 0
-
-        if success:
-            raw_logs = container.logs().decode("utf-8", errors="replace")
-            log_text = (
-                raw_logs
-                if raw_logs.strip()
-                else "Container finished but produced no logs."
-            )
-        else:
-            log_text = f"Container exited with non-zero code: {exit_code}"
+        raw_logs = container.logs().decode("utf-8", errors="replace")
+        log_text = (
+            raw_logs
+            if raw_logs.strip()
+            else "Container did not produce any STDOUT or logs."
+        )
 
     # Case: Container execution exceeds time limit.
     except (requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError):
