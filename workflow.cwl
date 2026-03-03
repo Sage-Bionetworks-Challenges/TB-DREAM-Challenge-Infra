@@ -217,7 +217,7 @@ steps:
       - id: submissionid
         source: "#submissionId"
       - id: annotation_values
-        source: "#upload_results/results"
+        source: "#upload_generated_predictions/results"
       - id: to_public
         default: true
       - id: force
