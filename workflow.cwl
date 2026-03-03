@@ -324,8 +324,8 @@ steps:
         source: "#synapseConfig"
       - id: results
         source: "#score/results"
-      - id: private_annotations
-        default: []
+      # - id: private_annotations
+      #   default: []
     out: []
 
   add_score_annots:
