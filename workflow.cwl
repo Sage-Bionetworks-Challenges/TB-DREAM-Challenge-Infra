@@ -308,6 +308,7 @@ steps:
         source: "#check_validation_status/finished"
     out:
       - id: results
+      - id: status
       
   send_score_results:
     doc: >
