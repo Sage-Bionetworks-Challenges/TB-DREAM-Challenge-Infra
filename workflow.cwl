@@ -259,7 +259,7 @@ steps:
       - id: invalid_reasons
         source: "#validate/invalid_reasons"
       - id: errors_only
-        default: false
+        default: true
     out: [finished]
 
   add_validation_annots:

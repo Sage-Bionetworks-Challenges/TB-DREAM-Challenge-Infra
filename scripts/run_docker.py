@@ -149,7 +149,6 @@ def run_docker(syn, args, docker_client, output_dir_to_mount):
     container = None
     success = False
     log_text = ""
-
     try:
         container = docker_client.containers.run(
             docker_image,
